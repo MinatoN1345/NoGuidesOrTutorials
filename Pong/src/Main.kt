@@ -39,32 +39,12 @@ class Pong : Application()
     var ball = Rectangle(5.0,5.0)
     var ballSpeed = 2
     var collisionDetected = false
+    var outOfbounds = false
     var animationTimer = object:  AnimationTimer()
     {
         override fun handle(now: Long) {
-            // moveBall()
-            //ballPaddleCollisionDetection()
-            if(ball.intersects(paddleLeft.rectangle.x,paddleLeft.rectangle.y,paddleLeft.rectangle.width,paddleLeft.rectangle.height))
-            {
-               // collisionDetected = true
-                println("ball layx: "+ball.layoutX)
-                println("ball layy: "+ball.layoutY)
-
-            }
-                    /*
-            if(collisionDetected)
-            {
-                //println("ouch")
-              //  leftPaddle.fill= Color.AQUA
-               /* println("Width: "+rightPaddle.width)
-                println("height: "+rightPaddle.height)
-                println("ball Width: "+ball.width)
-                println("ball height: "+ball.height)*/
-              //  println("layx: "+rightPaddle.layoutX)
-                //println("layy: "+rightPaddle.layoutY)
-
-            }
-*/
+            moveBall()
+            ballPaddleCollisionDetection()
         }
     }
 
@@ -119,21 +99,23 @@ class Pong : Application()
         labelRightPlayer.textFill = Color.WHITE
         root.children.add(labelRightPlayer)
 
-        paddleLeft.rectangle.layoutX = 200.0
-        paddleLeft.rectangle.layoutY = 250.0
+        paddleLeft.rectangle.x = 200.0
+        paddleLeft.rectangle.y = 250.0
         paddleLeft.rectangle.fill = Color.WHITE
         root.children.add(paddleLeft.rectangle)
 
-        paddleRight.rectangle.layoutX = 600.0
-        paddleRight.rectangle.layoutY = 250.0
-        paddleLeft.rectangle.fill =Color.GREEN
+        paddleRight.rectangle.x = 600.0
+        paddleRight.rectangle.y = 250.0
+        paddleLeft.rectangle.fill = Color.WHITE
 
         paddleRight.rectangle.fill = Color.WHITE
         root.children.add(paddleRight.rectangle)
 
-        ball.layoutX = 400.0
-        ball.layoutY = 300.0
-        ball.fill = Color.RED
+//        ball.layoutX = 400.0
+        ball.x = 400.0
+        ball.y = 300.0
+  //      ball.layoutY = 300.0
+        ball.fill = Color.WHITE
        // ball.style = "-fx-background-color: #FF0000; -fx-border-width: 5px; -fx-border-color:White"
        // spawnBall()
         root.children.add(ball)
@@ -143,7 +125,7 @@ class Pong : Application()
         for(i in 0..600 step(40))
         {
             graphicsContext.fillRect(390.0,00.0 + i,20.0,20.0)
-            graphicsContext.
+           // graphicsContext.
         }
 
         animationTimer.start()
@@ -152,9 +134,9 @@ class Pong : Application()
 
     fun movePaddle(paddle : Rectangle, direction: Int)
     {
-        if(paddle.layoutY + direction <= canvas.height && paddle.layoutY + direction > 0)
+        if(paddle.y + direction <= canvas.height && paddle.y + direction > 0)
         {
-            paddle.layoutY = paddle.layoutY + direction
+            paddle.y = paddle.y + direction
         }
     }
 
@@ -166,29 +148,63 @@ class Pong : Application()
 
     fun moveBall()
     {
-        if((ball.layoutX >= canvas.width) || (ball.layoutY >= canvas.height) )
+        if((ball.x >= 790.0) || (ball.y >= 590.0) )
         {
             ballSpeed = -ballSpeed
         }
-        ball.layoutX = ball.layoutX + ballSpeed
-        ball.layoutY = ball.layoutY + ballSpeed
-        if(ball.layoutX <= 0 || ball.layoutY <= 0 )
+        ball.x = ball.x + ballSpeed
+        ball.y = ball.y + ballSpeed
+        if(ball.x <= 0 || ball.y <= 0 )
         {
             ballSpeed = -ballSpeed
+        }
+        if(ball.x > paddleRight.rectangle.x)
+        {
+            outOfbounds = true
+            if(outOfbounds)
+            {
+                increaseScore(labelLeftPlayer)
+                outOfbounds = false
+            }
+        }
+        if(ball.x < paddleLeft.rectangle.x)
+        {
+            outOfbounds = true
+            if(outOfbounds)
+            {
+                increaseScore(labelRightPlayer)
+                outOfbounds = false
+            }
         }
     }
 
     fun ballPaddleCollisionDetection()
     {
-        //var intersect = Shape.intersect(rightPaddle)
-        var ballBounds = ball.layoutBounds
-        var rrPadBounds = ball.layoutBounds
-        if(ballBounds.intersects(rrPadBounds))
+        if(ball.intersects(paddleLeft.rectangle.x,paddleLeft.rectangle.y,paddleLeft.rectangle.width,paddleLeft.rectangle.height))
         {
-            println("Intersection")
+            collisionDetected = true
+            println("Player One hits it!")
+            ballSpeed = -ballSpeed
         }
-       // var intersection = Shape.intersect(rightPaddle,ball)
-     ///  intersection.fill = Color.RED
+        if(ball.intersects(paddleRight.rectangle.x,paddleRight.rectangle.y,paddleRight.rectangle.width,paddleRight.rectangle.height))
+        {
+            collisionDetected = true
+            println("Player Two hits it!")
+            ballSpeed = -ballSpeed
+        }
+
+    }
+
+    fun increaseScore(label: Label)
+    {
+        val score = label.text.toInt()
+        var scoreIncrement = score
+        if(scoreIncrement != (score + 1))
+        {
+            scoreIncrement = score + 1
+        }
+        label.text = scoreIncrement.toString()
+
     }
 
 }
