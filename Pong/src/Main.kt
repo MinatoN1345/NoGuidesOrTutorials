@@ -37,14 +37,39 @@ class Pong : Application()
     var paddleSpeed = 25
     //var ball = Sphere(4.0)
     var ball = Rectangle(5.0,5.0)
-    var ballSpeed = 2
+    var ballSpeed = 8 //was 2
     var collisionDetected = false
     var outOfbounds = false
+    val maxPoints : Int = 15
+    var isGameOver = false
+    var gameOverLabel = Label("Game Over")
+    var playerWinsLabel = Label()
     var animationTimer = object:  AnimationTimer()
     {
         override fun handle(now: Long) {
             moveBall()
             ballPaddleCollisionDetection()
+            if(outOfbounds)
+            {
+                this.stop()
+            }
+            if(isGameOver)
+            {
+                this.stop()
+                gameOverLabel.isVisible = true
+                playerWinsLabel.isVisible = true
+
+                var playerNumber = 0
+                if(labelLeftPlayer.text.toInt() > labelRightPlayer.text.toInt())
+                {
+                    playerNumber = 1
+                }
+                else
+                {
+                    playerNumber = 2
+                }
+                playerWinsLabel.text = "Player " + playerNumber + " wins!"
+            }
         }
     }
 
@@ -125,8 +150,21 @@ class Pong : Application()
         for(i in 0..600 step(40))
         {
             graphicsContext.fillRect(390.0,00.0 + i,20.0,20.0)
-           // graphicsContext.
         }
+
+        gameOverLabel.layoutX = 200.0
+        gameOverLabel.layoutY =250.0
+        gameOverLabel.font = Font.font(72.0)
+        gameOverLabel.textFill = Color.RED
+        gameOverLabel.isVisible = false
+        root.children.add(gameOverLabel)
+
+        playerWinsLabel.layoutX = 200.0
+        playerWinsLabel.layoutY =360.0
+        playerWinsLabel.font = Font.font(72.0)
+        playerWinsLabel.textFill = Color.GREEN
+        playerWinsLabel.isVisible = false
+        root.children.add(playerWinsLabel)
 
         animationTimer.start()
 
@@ -142,8 +180,10 @@ class Pong : Application()
 
     fun spawnBall()
     {
-        ball.layoutX = 400.0
-        ball.layoutY = 300.0
+        ball.x = 400.0
+        ball.y = 300.0
+        outOfbounds = false
+        animationTimer.start()
     }
 
     fun moveBall()
@@ -164,7 +204,7 @@ class Pong : Application()
             if(outOfbounds)
             {
                 increaseScore(labelLeftPlayer)
-                outOfbounds = false
+                spawnBall()
             }
         }
         if(ball.x < paddleLeft.rectangle.x)
@@ -173,7 +213,7 @@ class Pong : Application()
             if(outOfbounds)
             {
                 increaseScore(labelRightPlayer)
-                outOfbounds = false
+               spawnBall()
             }
         }
     }
@@ -197,15 +237,29 @@ class Pong : Application()
 
     fun increaseScore(label: Label)
     {
+
         val score = label.text.toInt()
-        var scoreIncrement = score
-        if(scoreIncrement != (score + 1))
+        if(score + 1 <= maxPoints)
         {
-            scoreIncrement = score + 1
+            var scoreIncrement = score
+            while(scoreIncrement != score + 1)
+            {
+                scoreIncrement = score + 1
+            }
+            /* if(scoreIncrement != (score + 1))
+             {
+                 scoreIncrement = score + 1
+             }*/
+            label.text = scoreIncrement.toString()
         }
-        label.text = scoreIncrement.toString()
+        else
+        {
+            isGameOver = true
+        }
 
     }
+
+
 
 }
 
