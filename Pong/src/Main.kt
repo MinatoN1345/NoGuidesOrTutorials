@@ -1,5 +1,6 @@
 import javafx.animation.AnimationTimer
 import javafx.application.Application
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.scene.Scene
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
@@ -8,6 +9,8 @@ import javafx.scene.control.Label
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.Pane
+import javafx.scene.media.Media
+import javafx.scene.media.MediaPlayer
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.Rectangle
@@ -37,17 +40,29 @@ class Pong : Application()
     var paddleSpeed = 25
     //var ball = Sphere(4.0)
     var ball = Rectangle(5.0,5.0)
-    var ballSpeed = 8 //was 2
+    var ballSpeed = 4 //was 2 , was 8
     var collisionDetected = false
     var outOfbounds = false
     val maxPoints : Int = 15
     var isGameOver = false
+    var ballSwitchDirection = false
     var gameOverLabel = Label("Game Over")
     var playerWinsLabel = Label()
+    var ballHitMedia = Media(this.javaClass.getResource("Res/Audio/ballHitPaddle.wav").toExternalForm().toString())
+    var ballMissedMedia = Media(this.javaClass.getResource("Res/Audio/ballMissedByPlayer.wav").toExternalForm().toString())
+    var ballHitWallMedia = Media(this.javaClass.getResource("Res/Audio/ballHitWall.wav").toExternalForm().toString())
+    var mediaPlayer = MediaPlayer(ballHitMedia)
+
+    var upArrowPressed = SimpleBooleanProperty()
+    var downArrowPressed = SimpleBooleanProperty()
+    var wPressed = SimpleBooleanProperty()
+    var sPressed = SimpleBooleanProperty()
+
     var animationTimer = object:  AnimationTimer()
     {
         override fun handle(now: Long) {
             moveBall()
+            checkPressed()
             ballPaddleCollisionDetection()
             if(outOfbounds)
             {
@@ -69,6 +84,12 @@ class Pong : Application()
                     playerNumber = 2
                 }
                 playerWinsLabel.text = "Player " + playerNumber + " wins!"
+                startButton.text = "Play Again?"
+                startButton.isVisible = true
+                startButton.setOnAction {
+                    startButton.isVisible = false
+                    this.start()
+                }
             }
         }
     }
@@ -76,51 +97,62 @@ class Pong : Application()
 
     override fun start(primaryStage: Stage?) {
         primaryStage?.scene = scene
-        primaryStage?.title ="Pong"
+        primaryStage?.title = "Pong"
         primaryStage?.show()
         graphicsContext.fill = Color.BLACK
         graphicsContext.fillRect(0.0,0.0,canvas.width,canvas.height)
         root.children.add(canvas)
-        /*
+
              startButton.layoutX = 300.0
              startButton.layoutY = 300.0
-             startButton.prefWidth=200.0
+             startButton.prefWidth = 200.0
              startButton.prefHeight = 50.0
-             startButton.textFill= Color.WHITE
+             startButton.textFill = Color.WHITE
              startButton.style = "-fx-background-color: #000000; -fx-border-width: 5px; -fx-border-color:White"
              //startButton.isVisible = false
           startButton.setOnAction {
                  startButton.isVisible = false
-
+                 animationTimer.start()
              }
-             */
+        root.children.add(startButton)
 
         scene.setOnKeyPressed{
 
             when(it.code)
             {
-                KeyCode.W -> movePaddle(paddleLeft.rectangle,-paddleSpeed)
-                KeyCode.S -> movePaddle(paddleLeft.rectangle,paddleSpeed)
-                KeyCode.UP -> movePaddle(paddleRight.rectangle,-paddleSpeed)
-                KeyCode.DOWN ->  movePaddle(paddleRight.rectangle,paddleSpeed)
-                KeyCode.T -> movePaddle(ball,-paddleSpeed)
-                KeyCode.G -> movePaddle(ball,paddleSpeed)
-                KeyCode.F -> ball.x -= 10
-                KeyCode.H -> ball.x += 10
+                KeyCode.W -> wPressed.set(true)
+                KeyCode.S -> sPressed.set(true)
+                KeyCode.UP -> upArrowPressed.set(true)
+                KeyCode.DOWN -> downArrowPressed.set(true)
+                //---------------------------------------------
                 else ->{}
             }
         }
-        //root.children.add(startButton)
+
+        scene.setOnKeyReleased {
+
+            when(it.code)
+            {
+                KeyCode.W -> wPressed.set(false)
+                KeyCode.S -> sPressed.set(false)
+                KeyCode.UP -> upArrowPressed.set(false)
+                KeyCode.DOWN -> downArrowPressed.set(false)
+                //---------------------------------------------
+                else ->{}
+            }
+
+        }
 
         labelLeftPlayer.layoutX =200.0
         labelLeftPlayer.layoutY =40.0
-        labelLeftPlayer.font = Font.font(72.0)
+        labelLeftPlayer.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         labelLeftPlayer.textFill = Color.WHITE
         root.children.add(labelLeftPlayer)
 
         labelRightPlayer.layoutX = 600.0
         labelRightPlayer.layoutY =40.0
-        labelRightPlayer.font = Font.font(72.0)
+      ///  labelRightPlayer.font = Font.font(72.0)
+        labelRightPlayer.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         labelRightPlayer.textFill = Color.WHITE
         root.children.add(labelRightPlayer)
 
@@ -136,13 +168,10 @@ class Pong : Application()
         paddleRight.rectangle.fill = Color.WHITE
         root.children.add(paddleRight.rectangle)
 
-//        ball.layoutX = 400.0
         ball.x = 400.0
         ball.y = 300.0
-  //      ball.layoutY = 300.0
         ball.fill = Color.WHITE
-       // ball.style = "-fx-background-color: #FF0000; -fx-border-width: 5px; -fx-border-color:White"
-       // spawnBall()
+        //spawnBall()
         root.children.add(ball)
 
         graphicsContext.fill = Color.WHITE
@@ -153,15 +182,15 @@ class Pong : Application()
         }
 
         gameOverLabel.layoutX = 200.0
-        gameOverLabel.layoutY =250.0
-        gameOverLabel.font = Font.font(72.0)
+        gameOverLabel.layoutY = 250.0
+        gameOverLabel.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         gameOverLabel.textFill = Color.RED
         gameOverLabel.isVisible = false
         root.children.add(gameOverLabel)
 
         playerWinsLabel.layoutX = 200.0
         playerWinsLabel.layoutY =360.0
-        playerWinsLabel.font = Font.font(72.0)
+        playerWinsLabel.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         playerWinsLabel.textFill = Color.GREEN
         playerWinsLabel.isVisible = false
         root.children.add(playerWinsLabel)
@@ -181,7 +210,7 @@ class Pong : Application()
     fun spawnBall()
     {
         ball.x = 400.0
-        ball.y = 300.0
+        ball.y = (Random().nextInt(500) + 100).toDouble() //Was 300.0
         outOfbounds = false
         animationTimer.start()
     }
@@ -190,14 +219,38 @@ class Pong : Application()
     {
         if((ball.x >= 790.0) || (ball.y >= 590.0) )
         {
-            ballSpeed = -ballSpeed
+           ballSpeed = -ballSpeed
+            ballSwitchDirection = true
+            mediaPlayer = MediaPlayer(ballHitWallMedia)
+            mediaPlayer.stop()
+            mediaPlayer.play()
         }
-        ball.x = ball.x + ballSpeed
-        ball.y = ball.y + ballSpeed
+        if(!ballSwitchDirection)
+        {
+           // ballSpeed = -ballSpeed
+            ball.x = ball.x + ballSpeed
+            ball.y = ball.y + ballSpeed
+        }
+        else
+        {
+            println("In here")
+            println(ball.x)
+            println(ball.y)
+            ball.x = ball.x - ballSpeed
+            ball.y = ball.y + ballSpeed
+            ballSwitchDirection = false
+        }
+
+
         if(ball.x <= 0 || ball.y <= 0 )
         {
             ballSpeed = -ballSpeed
+            ballSwitchDirection = true
+            mediaPlayer = MediaPlayer(ballHitWallMedia)
+            mediaPlayer.stop()
+            mediaPlayer.play()
         }
+
         if(ball.x > paddleRight.rectangle.x)
         {
             outOfbounds = true
@@ -207,6 +260,7 @@ class Pong : Application()
                 spawnBall()
             }
         }
+
         if(ball.x < paddleLeft.rectangle.x)
         {
             outOfbounds = true
@@ -218,38 +272,67 @@ class Pong : Application()
         }
     }
 
+    fun checkPressed()
+    {
+        if(upArrowPressed.get())
+        {
+            movePaddle(paddleRight.rectangle,-paddleSpeed)
+        }
+
+        if(downArrowPressed.get())
+        {
+            movePaddle(paddleRight.rectangle,paddleSpeed)
+        }
+
+        if(wPressed.get())
+        {
+            movePaddle(paddleLeft.rectangle,-paddleSpeed)
+        }
+
+        if(sPressed.get())
+        {
+            movePaddle(paddleLeft.rectangle,paddleSpeed)
+        }
+    }
+
+
     fun ballPaddleCollisionDetection()
     {
         if(ball.intersects(paddleLeft.rectangle.x,paddleLeft.rectangle.y,paddleLeft.rectangle.width,paddleLeft.rectangle.height))
         {
+            mediaPlayer.stop()
+            mediaPlayer.play()
             collisionDetected = true
             println("Player One hits it!")
             ballSpeed = -ballSpeed
+            //ballSwitchDirection = true
         }
         if(ball.intersects(paddleRight.rectangle.x,paddleRight.rectangle.y,paddleRight.rectangle.width,paddleRight.rectangle.height))
         {
+            mediaPlayer.stop()
+            mediaPlayer.play()
             collisionDetected = true
             println("Player Two hits it!")
             ballSpeed = -ballSpeed
+            //ballSwitchDirection = true
         }
 
     }
 
     fun increaseScore(label: Label)
     {
-
+        mediaPlayer = MediaPlayer(ballMissedMedia)
+        mediaPlayer.stop()
+        mediaPlayer.play()
         val score = label.text.toInt()
         if(score + 1 <= maxPoints)
         {
             var scoreIncrement = score
-            while(scoreIncrement != score + 1)
-            {
-                scoreIncrement = score + 1
-            }
-            /* if(scoreIncrement != (score + 1))
+
+             if(scoreIncrement != (score + 1))
              {
                  scoreIncrement = score + 1
-             }*/
+             }
             label.text = scoreIncrement.toString()
         }
         else
