@@ -19,6 +19,7 @@ import javafx.scene.shape.Sphere
 import javafx.scene.text.Font
 import javafx.stage.Stage
 import java.util.*
+import kotlin.concurrent.timerTask
 
 class Pong : Application()
 {
@@ -48,6 +49,8 @@ class Pong : Application()
     var ballSwitchDirection = false
     var gameOverLabel = Label("Game Over")
     var playerWinsLabel = Label()
+    var startGameLabel = Label("Press 'space' to start")
+
     var ballHitMedia = Media(this.javaClass.getResource("Res/Audio/ballHitPaddle.wav").toExternalForm().toString())
     var ballMissedMedia = Media(this.javaClass.getResource("Res/Audio/ballMissedByPlayer.wav").toExternalForm().toString())
     var ballHitWallMedia = Media(this.javaClass.getResource("Res/Audio/ballHitWall.wav").toExternalForm().toString())
@@ -86,10 +89,6 @@ class Pong : Application()
                 playerWinsLabel.text = "Player " + playerNumber + " wins!"
                 startButton.text = "Play Again?"
                 startButton.isVisible = true
-                startButton.setOnAction {
-                    startButton.isVisible = false
-                    this.start()
-                }
             }
         }
     }
@@ -103,18 +102,7 @@ class Pong : Application()
         graphicsContext.fillRect(0.0,0.0,canvas.width,canvas.height)
         root.children.add(canvas)
 
-             startButton.layoutX = 300.0
-             startButton.layoutY = 300.0
-             startButton.prefWidth = 200.0
-             startButton.prefHeight = 50.0
-             startButton.textFill = Color.WHITE
-             startButton.style = "-fx-background-color: #000000; -fx-border-width: 5px; -fx-border-color:White"
-             //startButton.isVisible = false
-          startButton.setOnAction {
-                 startButton.isVisible = false
-                 animationTimer.start()
-             }
-        root.children.add(startButton)
+
 
         scene.setOnKeyPressed{
 
@@ -124,7 +112,13 @@ class Pong : Application()
                 KeyCode.S -> sPressed.set(true)
                 KeyCode.UP -> upArrowPressed.set(true)
                 KeyCode.DOWN -> downArrowPressed.set(true)
-                //---------------------------------------------
+                KeyCode.SPACE -> drawGame()
+                //---------------------------------------------//TODO REMOVE DELETE
+                KeyCode.T -> movePaddle(ball,-paddleSpeed)
+                KeyCode.G -> movePaddle(ball,paddleSpeed)
+                KeyCode.F -> ball.x -= 10
+                KeyCode.H -> ball.x += 10
+                KeyCode.R -> restart()
                 else ->{}
             }
         }
@@ -138,11 +132,101 @@ class Pong : Application()
                 KeyCode.UP -> upArrowPressed.set(false)
                 KeyCode.DOWN -> downArrowPressed.set(false)
                 //---------------------------------------------
+
                 else ->{}
             }
 
         }
 
+
+        startGameLabel.layoutX = 180.0
+        startGameLabel.layoutY = 280.0
+        startGameLabel.isWrapText = true
+        startGameLabel.textFill = Color.WHITE
+        startGameLabel.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),36.0)
+        root.children.add(startGameLabel)
+
+
+
+    }
+
+    fun movePaddle(paddle : Rectangle, direction: Int)
+    {
+        if(paddle.y + direction <= canvas.height && paddle.y + direction > 0)
+        {
+            paddle.y = paddle.y + direction
+        }
+    }
+
+    fun spawnBall()
+    {
+        ball.x = 400.0
+        ball.y = (Random().nextInt(500) + 100).toDouble() //Was 300.0
+        outOfbounds = false
+        //animationTimer.start()
+    }
+
+    fun moveBall()
+    {
+        if((ball.x >= 790.0) || (ball.y >= 590.0) )
+        {
+           ballSpeed = -ballSpeed
+            ballSwitchDirection = true
+            mediaPlayer = MediaPlayer(ballHitWallMedia)
+            mediaPlayer.stop()
+            mediaPlayer.play()
+        }
+        if(!ballSwitchDirection)
+        {
+           // ballSpeed = -ballSpeed
+            ball.x = ball.x + ballSpeed
+            ball.y = ball.y + ballSpeed
+        }
+        else
+        {
+            println("In here")
+            println(ball.x)
+            println(ball.y)
+            ball.x = ball.x - ballSpeed
+            ball.y = ball.y + ballSpeed
+            ballSwitchDirection = false
+        }
+
+
+        if(ball.x <= 0 || ball.y <= 0 )
+        {
+            ballSpeed = -ballSpeed
+            ballSwitchDirection = true // commeted out 18 57 23 10 18 may need uncommenting //TODO
+            mediaPlayer = MediaPlayer(ballHitWallMedia)
+            mediaPlayer.stop()
+            mediaPlayer.play()
+        }
+
+        if(ball.x > paddleRight.rectangle.x)
+        {
+            outOfbounds = true
+            if(outOfbounds)
+            {
+                increaseScore(labelLeftPlayer)
+                spawnBall()
+            }
+        }
+
+        if(ball.x < paddleLeft.rectangle.x)
+        {
+            outOfbounds = true
+            if(outOfbounds)
+            {
+                increaseScore(labelRightPlayer)
+               spawnBall()
+            }
+        }
+    }
+
+    fun drawGame()
+    {
+
+        startGameLabel.isVisible = false
         labelLeftPlayer.layoutX =200.0
         labelLeftPlayer.layoutY =40.0
         labelLeftPlayer.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
@@ -151,7 +235,7 @@ class Pong : Application()
 
         labelRightPlayer.layoutX = 600.0
         labelRightPlayer.layoutY =40.0
-      ///  labelRightPlayer.font = Font.font(72.0)
+        ///  labelRightPlayer.font = Font.font(72.0)
         labelRightPlayer.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         labelRightPlayer.textFill = Color.WHITE
         root.children.add(labelRightPlayer)
@@ -196,80 +280,6 @@ class Pong : Application()
         root.children.add(playerWinsLabel)
 
         animationTimer.start()
-
-    }
-
-    fun movePaddle(paddle : Rectangle, direction: Int)
-    {
-        if(paddle.y + direction <= canvas.height && paddle.y + direction > 0)
-        {
-            paddle.y = paddle.y + direction
-        }
-    }
-
-    fun spawnBall()
-    {
-        ball.x = 400.0
-        ball.y = (Random().nextInt(500) + 100).toDouble() //Was 300.0
-        outOfbounds = false
-        animationTimer.start()
-    }
-
-    fun moveBall()
-    {
-        if((ball.x >= 790.0) || (ball.y >= 590.0) )
-        {
-           ballSpeed = -ballSpeed
-            ballSwitchDirection = true
-            mediaPlayer = MediaPlayer(ballHitWallMedia)
-            mediaPlayer.stop()
-            mediaPlayer.play()
-        }
-        if(!ballSwitchDirection)
-        {
-           // ballSpeed = -ballSpeed
-            ball.x = ball.x + ballSpeed
-            ball.y = ball.y + ballSpeed
-        }
-        else
-        {
-            println("In here")
-            println(ball.x)
-            println(ball.y)
-            ball.x = ball.x - ballSpeed
-            ball.y = ball.y + ballSpeed
-            ballSwitchDirection = false
-        }
-
-
-        if(ball.x <= 0 || ball.y <= 0 )
-        {
-            ballSpeed = -ballSpeed
-            ballSwitchDirection = true
-            mediaPlayer = MediaPlayer(ballHitWallMedia)
-            mediaPlayer.stop()
-            mediaPlayer.play()
-        }
-
-        if(ball.x > paddleRight.rectangle.x)
-        {
-            outOfbounds = true
-            if(outOfbounds)
-            {
-                increaseScore(labelLeftPlayer)
-                spawnBall()
-            }
-        }
-
-        if(ball.x < paddleLeft.rectangle.x)
-        {
-            outOfbounds = true
-            if(outOfbounds)
-            {
-                increaseScore(labelRightPlayer)
-               spawnBall()
-            }
-        }
     }
 
     fun checkPressed()
@@ -340,6 +350,32 @@ class Pong : Application()
             isGameOver = true
         }
 
+    }
+
+    fun resetForReplay()
+    {
+        labelLeftPlayer.text  = "0"
+        labelRightPlayer.text  = "0"
+        playerWinsLabel.isVisible = false
+        gameOverLabel.isVisible = false
+        paddleLeft.rectangle.x = 200.0
+        paddleLeft.rectangle.y = 250.0
+        paddleRight.rectangle.x = 600.0
+        paddleRight.rectangle.y = 250.0
+        spawnBall()
+        collisionDetected = false
+        outOfbounds = false
+        ballSwitchDirection = false
+    }
+
+    fun restart()
+    {
+        if(isGameOver)
+        {
+            isGameOver = false
+            resetForReplay()
+            animationTimer.start()
+        }
     }
 
 
