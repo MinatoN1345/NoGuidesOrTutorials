@@ -7,19 +7,14 @@ import javafx.scene.canvas.GraphicsContext
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
 import javafx.scene.layout.Pane
 import javafx.scene.media.Media
 import javafx.scene.media.MediaPlayer
 import javafx.scene.paint.Color
-import javafx.scene.shape.Circle
 import javafx.scene.shape.Rectangle
-import javafx.scene.shape.Shape
-import javafx.scene.shape.Sphere
 import javafx.scene.text.Font
 import javafx.stage.Stage
 import java.util.*
-import kotlin.concurrent.timerTask
 
 class Pong : Application()
 {
@@ -29,7 +24,6 @@ class Pong : Application()
     var graphicsContext : GraphicsContext = canvas.graphicsContext2D
 
     // Scene Items
-    var startButton = Button("Start")
     var labelLeftPlayer = Label("0")
     var labelRightPlayer = Label("0")
 
@@ -47,6 +41,7 @@ class Pong : Application()
     val maxPoints : Int = 15
     var isGameOver = false
     var ballSwitchDirection = false
+    var initialStart = false
     var gameOverLabel = Label("Game Over")
     var playerWinsLabel = Label()
     var startGameLabel = Label("Press 'space' to start")
@@ -87,8 +82,10 @@ class Pong : Application()
                     playerNumber = 2
                 }
                 playerWinsLabel.text = "Player " + playerNumber + " wins!"
-                startButton.text = "Play Again?"
-                startButton.isVisible = true
+                startGameLabel.isVisible = true
+                startGameLabel.layoutX = 176.0
+                startGameLabel.layoutY = 370.0
+                startGameLabel.text = "Press 'r' to play again."
             }
         }
     }
@@ -112,7 +109,11 @@ class Pong : Application()
                 KeyCode.S -> sPressed.set(true)
                 KeyCode.UP -> upArrowPressed.set(true)
                 KeyCode.DOWN -> downArrowPressed.set(true)
-                KeyCode.SPACE -> drawGame()
+                KeyCode.SPACE -> if(!initialStart)
+                {
+                    drawGame()
+                    initialStart = true
+                }
                 //---------------------------------------------//TODO REMOVE DELETE
                 KeyCode.T -> movePaddle(ball,-paddleSpeed)
                 KeyCode.G -> movePaddle(ball,paddleSpeed)
@@ -266,14 +267,14 @@ class Pong : Application()
         }
 
         gameOverLabel.layoutX = 200.0
-        gameOverLabel.layoutY = 250.0
+        gameOverLabel.layoutY = 210.0
         gameOverLabel.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         gameOverLabel.textFill = Color.RED
         gameOverLabel.isVisible = false
         root.children.add(gameOverLabel)
 
-        playerWinsLabel.layoutX = 200.0
-        playerWinsLabel.layoutY =360.0
+        playerWinsLabel.layoutX = 160.0
+        playerWinsLabel.layoutY =280.0
         playerWinsLabel.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         playerWinsLabel.textFill = Color.GREEN
         playerWinsLabel.isVisible = false
@@ -358,6 +359,7 @@ class Pong : Application()
         labelRightPlayer.text  = "0"
         playerWinsLabel.isVisible = false
         gameOverLabel.isVisible = false
+        startGameLabel.isVisible = false
         paddleLeft.rectangle.x = 200.0
         paddleLeft.rectangle.y = 250.0
         paddleRight.rectangle.x = 600.0
