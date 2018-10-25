@@ -18,44 +18,49 @@ import java.util.*
 
 class Pong : Application()
 {
-    var root = Pane()
-    var scene = Scene(root,800.0,600.0)
-    var canvas = Canvas(800.0,600.0)
-    var graphicsContext : GraphicsContext = canvas.graphicsContext2D
+    // Main components
+    val root = Pane()
+    val scene = Scene(root,800.0,600.0)
+    val canvas = Canvas(800.0,600.0)
+    val graphicsContext : GraphicsContext = canvas.graphicsContext2D
 
-    // Scene Items
-    var labelLeftPlayer = Label("0")
-    var labelRightPlayer = Label("0")
+    // Labels
+    val labelLeftPlayer = Label("0")
+    val labelRightPlayer = Label("0")
+    val gameOverLabel = Label("Game Over")
+    val playerWinsLabel = Label()
+    val startGameLabel = Label("Press 'space' to start")
 
-    // Paddles and Ball Declaration.
-    //var leftPaddle = Rectangle(15.0,80.0)
-    var paddleLeft = Paddle()
-    var paddleRight = Paddle()
-   // var rightPaddle = Rectangle(15.0,80.0)
-    var paddleSpeed = 25
-    //var ball = Sphere(4.0)
-    var ball = Rectangle(5.0,5.0)
-    var ballSpeed = 4 //was 2 , was 8
+    // Booleans
     var collisionDetected = false
     var outOfbounds = false
-    val maxPoints : Int = 15
     var isGameOver = false
     var ballSwitchDirection = false
     var initialStart = false
-    var gameOverLabel = Label("Game Over")
-    var playerWinsLabel = Label()
-    var startGameLabel = Label("Press 'space' to start")
-
-    var ballHitMedia = Media(this.javaClass.getResource("Res/Audio/ballHitPaddle.wav").toExternalForm().toString())
-    var ballMissedMedia = Media(this.javaClass.getResource("Res/Audio/ballMissedByPlayer.wav").toExternalForm().toString())
-    var ballHitWallMedia = Media(this.javaClass.getResource("Res/Audio/ballHitWall.wav").toExternalForm().toString())
-    var mediaPlayer = MediaPlayer(ballHitMedia)
-
     var upArrowPressed = SimpleBooleanProperty()
     var downArrowPressed = SimpleBooleanProperty()
     var wPressed = SimpleBooleanProperty()
     var sPressed = SimpleBooleanProperty()
 
+    // Paddles and Ball Declaration.
+    //var leftPaddle = Rectangle(15.0,80.0)
+    val paddleLeft = Paddle()
+    val paddleRight = Paddle()
+    // var rightPaddle = Rectangle(15.0,80.0)
+    var paddleSpeed = 25
+    //var ball = Sphere(4.0)
+    val ball = Rectangle(5.0,5.0)
+    var ballSpeed = 4 //was 2 , was 8
+    val maxPoints : Int = 15
+
+
+    // Media (Audio Files)
+    val ballHitMedia = Media(this.javaClass.getResource("Res/Audio/ballHitPaddle.wav").toExternalForm().toString())
+    val ballMissedMedia = Media(this.javaClass.getResource("Res/Audio/ballMissedByPlayer.wav").toExternalForm().toString())
+    val ballHitWallMedia = Media(this.javaClass.getResource("Res/Audio/ballHitWall.wav").toExternalForm().toString())
+    var mediaPlayer = MediaPlayer(ballHitMedia)
+
+    // Main Game Loop
     var animationTimer = object:  AnimationTimer()
     {
         override fun handle(now: Long) {
@@ -71,16 +76,7 @@ class Pong : Application()
                 this.stop()
                 gameOverLabel.isVisible = true
                 playerWinsLabel.isVisible = true
-
-                var playerNumber = 0
-                if(labelLeftPlayer.text.toInt() > labelRightPlayer.text.toInt())
-                {
-                    playerNumber = 1
-                }
-                else
-                {
-                    playerNumber = 2
-                }
+                val playerNumber = if(labelLeftPlayer.text.toInt() > labelRightPlayer.text.toInt()) 1 else 2
                 playerWinsLabel.text = "Player " + playerNumber + " wins!"
                 startGameLabel.isVisible = true
                 startGameLabel.layoutX = 176.0
@@ -99,8 +95,6 @@ class Pong : Application()
         graphicsContext.fillRect(0.0,0.0,canvas.width,canvas.height)
         root.children.add(canvas)
 
-
-
         scene.setOnKeyPressed{
 
             when(it.code)
@@ -112,7 +106,7 @@ class Pong : Application()
                 KeyCode.SPACE -> if(!initialStart)
                 {
                     drawGame()
-                    initialStart = true
+                    initialStart = true // Stops the user from pressing space again.
                 }
                 //---------------------------------------------//TODO REMOVE DELETE
                 KeyCode.T -> movePaddle(ball,-paddleSpeed)
@@ -124,7 +118,7 @@ class Pong : Application()
             }
         }
 
-        scene.setOnKeyReleased {
+        scene.setOnKeyReleased { // When keys are released let the 'listeners' know.
 
             when(it.code)
             {
@@ -132,13 +126,9 @@ class Pong : Application()
                 KeyCode.S -> sPressed.set(false)
                 KeyCode.UP -> upArrowPressed.set(false)
                 KeyCode.DOWN -> downArrowPressed.set(false)
-                //---------------------------------------------
-
                 else ->{}
             }
-
         }
-
 
         startGameLabel.layoutX = 180.0
         startGameLabel.layoutY = 280.0
@@ -159,23 +149,20 @@ class Pong : Application()
         }
     }
 
-    fun spawnBall()
+    fun spawnBall() // Spawns the ball when a point has been scored or at the start of the game.
     {
         ball.x = 400.0
-        ball.y = (Random().nextInt(500) + 100).toDouble() //Was 300.0
+        ball.y = (Random().nextInt(500) + 90).toDouble() //Was 300.0
         outOfbounds = false
-        //animationTimer.start()
     }
 
     fun moveBall()
     {
         if((ball.x >= 790.0) || (ball.y >= 590.0) )
         {
-           ballSpeed = -ballSpeed
+            ballSpeed = -ballSpeed
             ballSwitchDirection = true
-            mediaPlayer = MediaPlayer(ballHitWallMedia)
-            mediaPlayer.stop()
-            mediaPlayer.play()
+            playSound(ballHitWallMedia)
         }
         if(!ballSwitchDirection)
         {
@@ -198,9 +185,7 @@ class Pong : Application()
         {
             ballSpeed = -ballSpeed
             ballSwitchDirection = true // commeted out 18 57 23 10 18 may need uncommenting //TODO
-            mediaPlayer = MediaPlayer(ballHitWallMedia)
-            mediaPlayer.stop()
-            mediaPlayer.play()
+            playSound(ballHitWallMedia)
         }
 
         if(ball.x > paddleRight.rectangle.x)
@@ -226,17 +211,15 @@ class Pong : Application()
 
     fun drawGame()
     {
-
         startGameLabel.isVisible = false
-        labelLeftPlayer.layoutX =200.0
-        labelLeftPlayer.layoutY =40.0
+        labelLeftPlayer.layoutX = 200.0
+        labelLeftPlayer.layoutY = 40.0
         labelLeftPlayer.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         labelLeftPlayer.textFill = Color.WHITE
         root.children.add(labelLeftPlayer)
 
         labelRightPlayer.layoutX = 600.0
-        labelRightPlayer.layoutY =40.0
-        ///  labelRightPlayer.font = Font.font(72.0)
+        labelRightPlayer.layoutY = 40.0
         labelRightPlayer.font = Font.loadFont(this.javaClass.getResource("Res/Font/font.ttf").toExternalForm().toString(),72.0)
         labelRightPlayer.textFill = Color.WHITE
         root.children.add(labelRightPlayer)
@@ -283,7 +266,7 @@ class Pong : Application()
         animationTimer.start()
     }
 
-    fun checkPressed()
+    fun checkPressed() // Checks whether any of the 4 keys dedicated to moving the paddles up or down, have been pressed.
     {
         if(upArrowPressed.get())
         {
@@ -311,8 +294,7 @@ class Pong : Application()
     {
         if(ball.intersects(paddleLeft.rectangle.x,paddleLeft.rectangle.y,paddleLeft.rectangle.width,paddleLeft.rectangle.height))
         {
-            mediaPlayer.stop()
-            mediaPlayer.play()
+            playSound(ballHitMedia)
             collisionDetected = true
             println("Player One hits it!")
             ballSpeed = -ballSpeed
@@ -320,21 +302,17 @@ class Pong : Application()
         }
         if(ball.intersects(paddleRight.rectangle.x,paddleRight.rectangle.y,paddleRight.rectangle.width,paddleRight.rectangle.height))
         {
-            mediaPlayer.stop()
-            mediaPlayer.play()
+            playSound(ballHitMedia)
             collisionDetected = true
             println("Player Two hits it!")
             ballSpeed = -ballSpeed
             //ballSwitchDirection = true
         }
-
     }
 
     fun increaseScore(label: Label)
     {
-        mediaPlayer = MediaPlayer(ballMissedMedia)
-        mediaPlayer.stop()
-        mediaPlayer.play()
+        playSound(ballMissedMedia)
         val score = label.text.toInt()
         if(score + 1 <= maxPoints)
         {
@@ -350,7 +328,6 @@ class Pong : Application()
         {
             isGameOver = true
         }
-
     }
 
     fun resetForReplay()
@@ -380,15 +357,20 @@ class Pong : Application()
         }
     }
 
+    fun playSound(media: Media) // Plays the given media depending on the situation.
+    {
+        mediaPlayer = MediaPlayer(media)
+        mediaPlayer.stop()
+        mediaPlayer.play()
+    }
+
 
 
 }
 
 //open class Paddle(val paddleSpeed:Int = 25, val width:Int, height: Int)
 open class Paddle(val paddleSpeed:Int = 25, val rectangle: Rectangle = Rectangle(15.0, 80.0))
-{
 
-}
 fun main(args: Array<String>) {
     Application.launch(Pong::class.java, *args)
 }
