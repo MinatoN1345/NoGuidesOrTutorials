@@ -53,6 +53,8 @@ class Pong : Application()
     var ballSpeed = 4 //was 2 , was 8
     val maxPoints : Int = 15
 
+    var bouncingBack = false
+    var isBallMoving = false
 
     // Media (Audio Files)
     val ballHitMedia = Media(this.javaClass.getResource("Res/Audio/ballHitPaddle.wav").toExternalForm().toString())
@@ -158,53 +160,82 @@ class Pong : Application()
 
     fun moveBall()
     {
-        if((ball.x >= 790.0) || (ball.y >= 590.0) )
+        isBallMoving = true
+        if(!ballSwitchDirection && !bouncingBack && isBallMoving) // If you do not need to switch the direction of the ball, keep moving.
         {
-            ballSpeed = -ballSpeed
-            ballSwitchDirection = true
-            playSound(ballHitWallMedia)
+        // ballSpeed = -ballSpeed
+
+            //TODO JUST FOR HIGHLIGHTING PURPOSES :GO DOWN
+        ball.x = ball.x + ballSpeed
+        ball.y = ball.y + ballSpeed
+        println("Don't switch")
         }
-        if(!ballSwitchDirection)
+        if(bouncingBack) // If you need to switch the direction of the ball.
         {
-           // ballSpeed = -ballSpeed
-            ball.x = ball.x + ballSpeed
-            ball.y = ball.y + ballSpeed
-        }
-        else
-        {
+            ballSwitchDirection = false
+            //bouncingBack = false
             println("In here")
             println(ball.x)
             println(ball.y)
-            ball.x = ball.x - ballSpeed
-            ball.y = ball.y + ballSpeed
-            ballSwitchDirection = false
+            if(!isBallMoving)
+            {
+                //TODO JUST FOR HIGHLIGHTING PURPOSES :GO UP
+                ball.x = ball.x + ballSpeed
+                ball.y = ball.y - ballSpeed
+            }
+            else
+            {
+                ball.x = ball.x + ballSpeed
+                ball.y = ball.y - ballSpeed
+            }
+
+            //  ballSwitchDirection = false // commented out 18 59 25 10 18 may need uncommenting //TODO
         }
+
+        if(((ball.x >= 790.0) || (ball.y >= 590.0) ) && !bouncingBack) // This is checking whether ball is hitting the 'walls and ceiling' of the game.
+        {
+            if(!isBallMoving)
+            {
+                ballSpeed = -ballSpeed // Make the ball go in the opposite direction.
+            }
+
+
+            ballSwitchDirection = true // It's direction has been switched.
+            bouncingBack = true
+            isBallMoving = true
+            println("Culprit")
+            playSound(ballHitWallMedia) // Play the relevant sound.
+        }
+
 
 
         if(ball.x <= 0 || ball.y <= 0 )
         {
-            ballSpeed = -ballSpeed
+            ballSpeed = -ballSpeed // commented out 18 57 25 10 18 may need uncommenting //TODO
             ballSwitchDirection = true // commeted out 18 57 23 10 18 may need uncommenting //TODO
+            bouncingBack = true
+           //// isBallMoving =true
+            println("Error")
             playSound(ballHitWallMedia)
         }
 
-        if(ball.x > paddleRight.rectangle.x)
-        {
-            outOfbounds = true
-            if(outOfbounds)
-            {
-                increaseScore(labelLeftPlayer)
-                spawnBall()
-            }
-        }
-
-        if(ball.x < paddleLeft.rectangle.x)
+        if(ball.x < paddleLeft.rectangle.x) // If the player on the left misses the ball.
         {
             outOfbounds = true
             if(outOfbounds)
             {
                 increaseScore(labelRightPlayer)
                spawnBall()
+            }
+        }
+
+        if(ball.x > paddleRight.rectangle.x) // If the player on the right misses the ball.
+        {
+            outOfbounds = true
+            if(outOfbounds)
+            {
+                increaseScore(labelLeftPlayer)
+                spawnBall()
             }
         }
     }
@@ -359,7 +390,10 @@ class Pong : Application()
 
     fun playSound(media: Media) // Plays the given media depending on the situation.
     {
-        mediaPlayer = MediaPlayer(media)
+        if(mediaPlayer == null)
+        {
+            mediaPlayer = MediaPlayer(media)
+        }
         mediaPlayer.stop()
         mediaPlayer.play()
     }
