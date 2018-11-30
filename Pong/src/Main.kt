@@ -4,7 +4,6 @@ import javafx.beans.property.SimpleBooleanProperty
 import javafx.scene.Scene
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
-import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.input.KeyCode
 import javafx.scene.layout.Pane
@@ -34,7 +33,6 @@ class Pong : Application() {
     var collisionDetected = false
     var outOfbounds = false
     var isGameOver = false
-    var ballSwitchDirection = false
     var initialStart = false
     var upArrowPressed = SimpleBooleanProperty()
     var downArrowPressed = SimpleBooleanProperty()
@@ -42,24 +40,20 @@ class Pong : Application() {
     var sPressed = SimpleBooleanProperty()
     var bottomHalfHit = false
     var topHalfHit = false
+    var collisionOccurring = false
 
     // Psuedo Boolean
     var hitLast = "paddleLeft"
     var halfCurrentlyIn = "leftSide"
+    var horizontalBoundaryHit = ""
 
     // Paddles and Ball Declaration.
-    //var leftPaddle = Rectangle(15.0,80.0)
     val paddleLeft = Paddle(name = "paddleLeft")
     val paddleRight = Paddle(name = "paddleRight")
-    // var rightPaddle = Rectangle(15.0,80.0)
-    var paddleSpeed = 10 //was 25
-    //var ball = Sphere(4.0)
+    var paddleSpeed = 10
     val ball = Rectangle(5.0, 5.0)
-    var ballSpeed = 4 //was 2 , was 8
+    var ballSpeed = 3
     val maxPoints: Int = 15
-
-    var bouncingBack = false
-    var isBallMoving = false
 
     // Media (Audio Files)
     val ballHitMedia = Media(this.javaClass.getResource("Res/Audio/ballHitPaddle.wav").toExternalForm().toString())
@@ -67,12 +61,11 @@ class Pong : Application() {
     val ballHitWallMedia = Media(this.javaClass.getResource("Res/Audio/ballHitWall.wav").toExternalForm().toString())
     var mediaPlayer = MediaPlayer(ballHitMedia)
 
-    // Main Game Loop
-    var animationTimer = object : AnimationTimer() {
+    var animationTimer = object : AnimationTimer()  // Main Game Loop
+    {
         override fun handle(now: Long) {
             moveBall()
             checkPressed()
-            checkWhichHalfBallIsIn()
             ballPaddleCollisionDetection()
             ballReflectDirection(hitLast)
             if (outOfbounds) {
@@ -92,7 +85,8 @@ class Pong : Application() {
         }
     }
 
-    override fun start(primaryStage: Stage?) {
+    override fun start(primaryStage: Stage?) // Initialises the start stage and what key presses should do what.
+    {
         primaryStage?.scene = scene
         primaryStage?.title = "Pong"
         primaryStage?.show()
@@ -101,7 +95,6 @@ class Pong : Application() {
         root.children.add(canvas)
 
         scene.setOnKeyPressed {
-
             when (it.code) {
                 KeyCode.W -> wPressed.set(true)
                 KeyCode.S -> sPressed.set(true)
@@ -111,11 +104,6 @@ class Pong : Application() {
                     drawGame()
                     initialStart = true // Stops the user from pressing space again.
                 }
-                //---------------------------------------------//TODO REMOVE DELETE
-                KeyCode.T -> movePaddle(ball, -paddleSpeed)
-                KeyCode.G -> movePaddle(ball, paddleSpeed)
-                KeyCode.F -> ball.x -= 10
-                KeyCode.H -> ball.x += 10
                 KeyCode.R -> restart()
                 else -> {
                 }
@@ -124,7 +112,6 @@ class Pong : Application() {
 
         scene.setOnKeyReleased {
             // When keys are released let the 'listeners' know.
-
             when (it.code) {
                 KeyCode.W -> wPressed.set(false)
                 KeyCode.S -> sPressed.set(false)
@@ -143,7 +130,8 @@ class Pong : Application() {
         root.children.add(startGameLabel)
     }
 
-    fun movePaddle(paddle: Rectangle, direction: Int) {
+    fun movePaddle(paddle: Rectangle, direction: Int) // Allows the paddles to move
+    {
         if (paddle.y + direction <= canvas.height && paddle.y + direction > 0) {
             paddle.y = paddle.y + direction
         }
@@ -156,70 +144,29 @@ class Pong : Application() {
         outOfbounds = false
     }
 
-    fun moveBall() {
-        isBallMoving = true
-        if (!ballSwitchDirection && !bouncingBack && isBallMoving) // If you do not need to switch the direction of the ball, keep moving.
+    fun moveBall() // Moves the ball depending on whether it hits the top or bottom boundaries.
+    {
+        if (( (ball.y >= 590.0))) // This is checking whether ball is hitting the 'walls and ceiling' of the game.
         {
-            // ballSpeed = -ballSpeed
-
-            //TODO JUST FOR HIGHLIGHTING PURPOSES :GO DOWN
-           // ball.x = ball.x + ballSpeed
-           // ball.y = ball.y + ballSpeed
-            println("Don't switch")
-        }
-        if (bouncingBack) // If you need to switch the direction of the ball.
-        {
-            ballSwitchDirection = false
-            //bouncingBack = false
-            println("In here")
-            println(ball.x)
-            println(ball.y)
-            //if(ball.y)
-            if (!isBallMoving) {
-                //TODO JUST FOR HIGHLIGHTING PURPOSES :GO UP
-             //   ball.x = ball.x + ballSpeed
-               // ball.y = ball.y - ballSpeed
-            } else {
-               // ball.x = ball.x + ballSpeed
-              //  ball.y = ball.y - ballSpeed
-            }
-
-            //  ballSwitchDirection = false // commented out 18 59 25 10 18 may need uncommenting //TODO
-        }
-
-        if (((ball.x >= 790.0) || (ball.y >= 590.0)) && !bouncingBack) // This is checking whether ball is hitting the 'walls and ceiling' of the game.
-        {
-            if (!isBallMoving) {
-              //  ballSpeed = -ballSpeed // Make the ball go in the opposite direction.
-            }
-
-
-            ballSwitchDirection = true // It's direction has been switched.
-            bouncingBack = true
-            isBallMoving = true
-            println("Culprit")
+            horizontalBoundaryHit = "bottom"
+            checkWhichHalfBallIsIn()
+            collisionOccurring = true
             playSound(ballHitWallMedia) // Play the relevant sound.
         }
 
-
-
-        if (ball.x <= 0 || ball.y <= 0) // When it hits the top is in her so the deflection logic belong here //TODO ADD DEFLECTION LOGIC[
+         if (ball.y < 0) // When it hits the top is in her so the deflection logic belong here
         {
-           // ballSpeed = -ballSpeed // commented out 18 57 25 10 18 may need uncommenting //TODO
-            ballSwitchDirection = true // commented out 18 57 23 10 18 may need uncommenting //TODO
-            //bouncingBack = true
-            //// isBallMoving =true
-
-         //   if(hitl)
-           // {
-
-           // }
-
-            println("Error")
+            ball.y += ballSpeed
+            horizontalBoundaryHit = "top"
+            checkWhichHalfBallIsIn()
+            collisionOccurring = true
             playSound(ballHitWallMedia)
         }
+        else
+        {
+            ballReflectDirectionTopOrBottom(hitLast)
+        }
 
-        /////////////////////////////////////////////////////////////////////////// TODO BENEATH HERE IS FINE
         if (ball.x < paddleLeft.rectangle.x) // If the player on the left misses the ball.
         {
             outOfbounds = true
@@ -239,7 +186,8 @@ class Pong : Application() {
         }
     }
 
-    fun drawGame() {
+    fun drawGame() // Draws the initial graphics and starts the initial timer.
+    {
         startGameLabel.isVisible = false
         labelLeftPlayer.layoutX = 200.0
         labelLeftPlayer.layoutY = 40.0
@@ -312,118 +260,149 @@ class Pong : Application() {
         }
     }
 
-    fun checkWhereBallHitPaddle(paddleStartPosition: Double)
+    fun checkWhereBallHitPaddle(paddleStartPosition: Double) // Checks where the ball hits the paddle, this allows the ball to deflect correctly.
     {
-        var totalHeight = paddleStartPosition + 80.0 //paddleLeft.rectangle.height
+        var totalHeight = paddleStartPosition + 80.0 // Paddle's height (80.0)
         var positionHit = ball.y
         var halfway = (totalHeight + paddleStartPosition ) / 2
 
         if (halfway <= positionHit) {
-            //println("Top Half")
             topHalfHit = true
             bottomHalfHit = false
         } else {
-            //println("Bottom Half")
             bottomHalfHit = true
             topHalfHit = false
         }
     }
 
-    fun checkWhichHalfBallIsIn()
+    fun checkWhichHalfBallIsIn() // Checks which half the ball is currently in
     {
-        if(ball.x > 390.0)
-        {
-            halfCurrentlyIn = "rightSide"
-        }
-        else
-        {
-            halfCurrentlyIn = "leftSide"
-        }
+        halfCurrentlyIn = if(ball.x > 390.0) "rightSide" else "leftSide"
     }
 
-    fun ballReflectDirection(paddleName: String)
+    fun ballReflectDirection(paddleName: String) // Deals with deflection once a paddle and the ball come into contact.
     {
-        /*
-            For the PaddleLeft, ball.x is always increasing.
-            For the PaddleRight ball.x is always decreasing.
-
-         */
-          if(paddleName.equals("paddleLeft"))
-          {
-              println(ball.x)
-              ball.x += ballSpeed
-              if(topHalfHit)
-              {
-                  ball.y += ballSpeed
-              }
-              else if(bottomHalfHit) // As in the top of the paddle
-              {
-                  ball.y -= ballSpeed
-              }
-          }
-          else if(paddleName.equals("paddleRight"))
-          {
-              ball.x -= ballSpeed
-
-              if(topHalfHit)
-              {
-                  ball.y += ballSpeed //TODO Double check this.
-              }
-              else if(bottomHalfHit)
-              {
-                  ball.y -= ballSpeed
-              }
-          }
-       /* else if(bottomHalfHit) // As in the top of the paddle
+        if(!collisionOccurring)
         {
-            if(paddleName.equals("PaddleLeft"))
+            if(paddleName.equals("paddleLeft"))
             {
                 ball.x += ballSpeed
-                ball.y -= ballSpeed
+                if(topHalfHit)
+                {
+                    ball.y += ballSpeed
+                }
+                else if(bottomHalfHit) // As in the top of the paddle
+                {
+                    ball.y -= ballSpeed
+                }
             }
-            else if(paddleName.equals("PaddleRight"))
+            else if(paddleName.equals("paddleRight"))
             {
                 ball.x -= ballSpeed
-                ball.y -= ballSpeed
+
+                if(topHalfHit)
+                {
+                    ball.y += ballSpeed
+                }
+                else if(bottomHalfHit)
+                {
+                    ball.y -= ballSpeed
+                }
             }
-        } */
+        }
     }
 
-    fun ballPaddleCollisionDetection() {
+    fun ballReflectDirectionTopOrBottom(paddleName: String) // Deals with deflection once a top/bottom boundary and the ball come into contact.
+    {
+        if(collisionOccurring)
+        {
+            if(paddleName.equals("paddleLeft"))
+            {
+                if(halfCurrentlyIn.equals("leftSide"))
+                {
+                    ball.x += ballSpeed
+                    if(horizontalBoundaryHit.equals("top"))
+                    {
+                        ball.y += ballSpeed
+                    }
+                    else if(horizontalBoundaryHit.equals("bottom"))
+                    {
+                        ball.y -= ballSpeed
+                    }
+                }
+                else if(halfCurrentlyIn.equals("rightSide"))
+                {
+                    ball.x += ballSpeed
+                    if(horizontalBoundaryHit.equals("top"))
+                    {
+                        ball.y += ballSpeed
+                    }
+                    else if(horizontalBoundaryHit.equals("bottom"))
+                    {
+                        ball.y -= ballSpeed
+                    }
+                }
+            }
+        if(paddleName.equals("paddleRight"))
+        {
+            if(halfCurrentlyIn.equals("leftSide"))
+            {
+                ball.x -= ballSpeed
+                if(horizontalBoundaryHit.equals("top"))
+                {
+                    ball.y += ballSpeed
+                }
+                else if(horizontalBoundaryHit.equals("bottom"))
+                {
+                    ball.y -= ballSpeed
+                }
+            }
+            else if(halfCurrentlyIn.equals("rightSide"))
+            {
+                ball.x -= ballSpeed
+                if(horizontalBoundaryHit.equals("top"))
+                {
+                    ball.y += ballSpeed
+                }
+                else if(horizontalBoundaryHit.equals("bottom"))
+                {
+                    ball.y -= ballSpeed
+                }
+            }
+        }
+        }
+    }
+
+    fun ballPaddleCollisionDetection() // Checks which paddle collides with the ball, plays a sound and makes it known a collision was detected. (Could be further cleaned up)
+    {
         if (ball.intersects(paddleLeft.rectangle.x, paddleLeft.rectangle.y, paddleLeft.rectangle.width, paddleLeft.rectangle.height)) {
             playSound(ballHitMedia)
             collisionDetected = true
             checkWhereBallHitPaddle(paddleLeft.rectangle.y)
-            //ballReflectDirection(paddleLeft.name)
             hitLast = paddleLeft.name
-            //ballSpeed = -ballSpeed
-           // ballSwitchDirection = true
         }
         if (ball.intersects(paddleRight.rectangle.x, paddleRight.rectangle.y, paddleRight.rectangle.width, paddleRight.rectangle.height)) {
             playSound(ballHitMedia)
             collisionDetected = true
             checkWhereBallHitPaddle(paddleRight.rectangle.y)
-            //ballReflectDirection(paddleRight.name)
             hitLast = paddleRight.name
-            println("Player Two hits it! at: ${ball.x} and ${ball.y}")
-            //ballSpeed = -ballSpeed
-           // ballSwitchDirection = true
         }
     }
 
     fun increaseScore(label: Label) // Deals with increasing the score of each player.
     {
         playSound(ballMissedMedia)
-        val score = label.text.toInt()
-        if (score + 1 <= maxPoints) {
+        val score = label.text.toInt() // say score is 14
+        if (score < maxPoints) { // if 14 < 15
             var scoreIncrement = score
 
-            if (scoreIncrement != (score + 1)) {
+            if (scoreIncrement != (maxPoints)) {
                 scoreIncrement = score + 1
             }
             label.text = scoreIncrement.toString()
-        } else {
-            isGameOver = true
+            if(scoreIncrement == maxPoints) {
+                isGameOver = true
+            }
         }
     }
 
@@ -440,8 +419,8 @@ class Pong : Application() {
         paddleRight.rectangle.y = 250.0
         spawnBall()
         collisionDetected = false
+        collisionOccurring = false
         outOfbounds = false
-        ballSwitchDirection = false
     }
 
     fun restart() // Restarts the game.
@@ -462,9 +441,7 @@ class Pong : Application() {
         mediaPlayer.play()
     }
 }
-
-//open class Paddle(val paddleSpeed:Int = 25, val width:Int, height: Int)
-open class Paddle(val paddleSpeed:Int = 25, val rectangle: Rectangle = Rectangle(15.0, 80.0), val name: String)
+class Paddle(val paddleSpeed:Int = 25, val rectangle: Rectangle = Rectangle(15.0, 80.0), val name: String)
 
 fun main(args: Array<String>) {
     Application.launch(Pong::class.java, *args)
